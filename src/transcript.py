@@ -14,6 +14,8 @@ class Transcript:
         self.cigar = cigar
         self.cigar_tuples = self.parse_cigar()  # CIGAR string
         self.strand = "+"  # Assume all transcripts are on the positive strand
+        self.tx_intervals = []
+        self.gx_intervals = []
 
     def valid_cigar(self):
         """
@@ -52,7 +54,7 @@ class Transcript:
                 tx_start -= length
             else:  # Skipped regions
                 pass
-        #TODO: if tx_start exceeds the length of the transcript, return the genomic position
+        # TODO: if tx_start exceeds the length of the transcript, return the genomic position?
         return genomic_pos + tx_start
 
     def visualize_cigar(self):
@@ -79,3 +81,50 @@ class Transcript:
         print(f"Genomic: {genomic_string}")
         print(f"Query:   {query_string}")
         print(f"Count:   {count_string}")
+
+    def precompute_tx_intervals(self):
+        """
+        Precompute the intervals of the transcript.
+        """
+        tx_intervals = []
+        gx_intervals = []
+        tx_pos = 0
+        gx_pos = self.genomic_start
+        for length, operation in self.cigar_tuples:
+            if operation in ["M", "=", "X"]:
+                tx_intervals.append((tx_pos, tx_pos + length - 1))
+                gx_intervals.append((gx_pos, gx_pos + length - 1))
+                tx_pos += length
+                gx_pos += length
+            elif operation in ["D", "N"]:
+                tx_intervals.append(
+                    (-tx_pos, -tx_pos)
+                )  # negative values to indicate skipped regions
+                gx_intervals.append((gx_pos, gx_pos + length - 1))
+                gx_pos += length
+            elif operation in ["I", "S"]:
+                tx_intervals.append((tx_pos, tx_pos + length - 1))
+                gx_intervals.append(
+                    (-gx_pos, -gx_pos)
+                )  # negative values to indicate skipped regions
+                tx_pos += length
+            else:
+                pass
+
+        print(f"Genomic intervals: {gx_intervals}")
+        print(f"Transcript intervals: {tx_intervals}")
+        # TODO: explore data structures to store intervals
+        self.tx_intervals = tx_intervals
+        self.gx_intervals = gx_intervals
+
+    def get_genomic_coordinates_from_precomputed_intervals(self, tx_start):
+        """
+        Given a transcript coordinate (tx_start), return the corresponding genomic coordinate using precomputed intervals.
+        """
+        for i, tx_interval in enumerate(self.tx_intervals):
+            tx_interval_start = tx_interval[0]
+            tx_interval_end = tx_interval[1]
+            if tx_start >= tx_interval_start and tx_start <= tx_interval_end:
+                tx_pos = tx_start - tx_interval_start
+                genomic_pos = self.gx_intervals[i][0] + tx_pos
+                return genomic_pos
