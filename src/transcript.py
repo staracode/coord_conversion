@@ -4,7 +4,7 @@ chromosome, genomic start position, and CIGAR string.
 """
 
 import re
-
+from intervaltree import Interval, IntervalTree
 
 class Transcript:
     def __init__(self, transcript_id, chromosome, genomic_start, cigar):
@@ -16,6 +16,7 @@ class Transcript:
         self.strand = "+"  # Assume all transcripts are on the positive strand
         self.tx_intervals = []
         self.gx_intervals = []
+        self.exonIntervals = None
 
     def valid_cigar(self):
         """
@@ -128,3 +129,31 @@ class Transcript:
                 tx_pos = tx_start - tx_interval_start
                 genomic_pos = self.gx_intervals[i][0] + tx_pos
                 return genomic_pos
+
+    def precomputeIntervals2(self):
+        """
+        Precompute the intervals of the transcript using the intervaltree library.
+        """
+        exonIntervals = IntervalTree()
+        tx_pos = 0
+        gx_pos = self.genomic_start
+        for length, operation in self.cigar_tuples:
+            if operation in ["M", "=", "X"]:
+                exonIntervals.addi(tx_pos, tx_pos + length, gx_pos)
+                tx_pos += length
+                gx_pos += length
+            elif operation in ["D", "N"]:  # what is N?
+                #exonIntervals.addi(tx_pos, tx_pos, gx_pos + length)
+                gx_pos += length
+            elif operation in ["I", "S"]:
+                tx_pos += length
+            else:       
+                pass
+        self.exonIntervals = exonIntervals
+    
+    def get_genomic_coordinates_from_precomputed_intervals2(self, tx_start):
+        """
+        Given a transcript coordinate (tx_start), return the corresponding genomic coordinate using precomputed intervals.
+        """
+        for interval in self.exonIntervals[tx_start]:
+            return interval.data + (tx_start - interval.begin)
