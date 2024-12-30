@@ -6,8 +6,11 @@ chromosome, genomic start position, and CIGAR string.
 import re
 from intervaltree import Interval, IntervalTree
 
+
 class Transcript:
-    def __init__(self, transcript_id: str, chromosome: str, genomic_start: int, cigar: str):
+    def __init__(
+        self, transcript_id: str, chromosome: str, genomic_start: int, cigar: str
+    ):
         self.transcript_id = transcript_id
         self.chromosome = chromosome
         if not isinstance(genomic_start, int):
@@ -16,11 +19,14 @@ class Transcript:
             raise ValueError("genomic_start must be a non-negative integer")
         self.genomic_start = genomic_start
         self.cigar = cigar
-        self.cigar_tuples = self.parse_cigar() # List of tuples (length, operation)
-        self.strand = "+"  # Assume that the transcript is always mapped from genomic 5’ to 3’.
-        self.tx_intervals = []  # List of tuples (start, end)      
+        self.cigar_tuples = self.parse_cigar()  # List of tuples (length, operation)
+        self.strand = (
+            "+"  # Assume that the transcript is always mapped from genomic 5’ to 3’.
+        )
+        self.tx_intervals = []  # List of tuples (start, end)
         self.gx_intervals = []  # List of tuples (start, end)
         self.exonIntervals = None
+        self.tx_len = 0
 
     def valid_cigar(self, cigar_tuple):
         """
@@ -30,7 +36,9 @@ class Transcript:
         cigar_operations = set(["M", "I", "D", "N", "S", "H", "P", "=", "X"])
         if operation not in cigar_operations:
             raise ValueError(f"Invalid operation {operation} in CIGAR string")
-        if length <= 0:  # I think technically zero is allowed but I can't understand the logic behind it
+        if (
+            length <= 0
+        ):  # I think technically zero is allowed but I can't understand the logic behind it
             raise ValueError(f"Invalid length {length} in CIGAR string")
 
     def parse_cigar(self):
@@ -59,11 +67,11 @@ class Transcript:
             elif operation in ["D", "N"]:
                 genomic_string += "D" * int(length)
                 query_string += "-" * int(length)
-            elif operation in ["I"]:  # I don't want to deal with S, H, P
+            elif operation in ["I", "S"]:
                 genomic_string += "-" * int(length)
                 query_string += "I" * int(length)
             else:
-                pass
+                pass  # I don't want to deal with  H, P
         print(f"Genomic: {genomic_string}")
         print(f"Query:   {query_string}")
         print(f"Count:   {count_string}")
@@ -95,7 +103,7 @@ class Transcript:
                 )  # negative values to indicate skipped regions
                 tx_pos += length
             else:
-                pass
+                pass  # I don't want to deal with H, P
 
         print(f"Genomic intervals: {gx_intervals}")
         print(f"Transcript intervals: {tx_intervals}")
@@ -127,21 +135,27 @@ class Transcript:
                 exonIntervals.addi(tx_pos, tx_pos + length, gx_pos)
                 tx_pos += length
                 gx_pos += length
-            elif operation in ["D", "N"]:  
+            elif operation in ["D", "N"]:
                 gx_pos += length
             elif operation in ["I", "S"]:
                 tx_pos += length
-            else:       
-                pass
+            else:
+                pass # I don't want to deal with H, P
         self.exonIntervals = exonIntervals
-    
+        self.tx_len = tx_pos
+
     def get_genomic_coordinates_from_precomputed_intervals2(self, tx_start: int):
         """
         Given a transcript coordinate (tx_start), return the corresponding genomic coordinate using precomputed intervals.
         """
-        if not isinstance(tx_start, int):
-            raise ValueError("tx_start must be an integer")
+        if self.exonIntervals is None or self.tx_len == 0:
+            raise ValueError("Exon intervals have not been precomputed.")
+        if tx_start < 0 or tx_start >= self.tx_len:
+            print(len(self.exonIntervals))
+            raise ValueError("tx_start is out of bounds.")
+
         if tx_start < 0:
             raise ValueError("tx_start must be a non-negative integer")
         for interval in self.exonIntervals[tx_start]:
             return interval.data + (tx_start - interval.begin)
+        return 0  # Return 0 if no interval is found

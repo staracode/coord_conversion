@@ -3,6 +3,7 @@ Goal: given a list of transcripts and a list of queries, find the genomic coordi
 """
 
 import sys
+
 sys.path.append("./")
 from transcript import Transcript
 import pandas as pd
@@ -37,14 +38,22 @@ def main():
             print(f"Transcript {query['query_id']} not found")
             continue
         transcript = all_transcripts[query["query_id"]]
-        try: 
-            genomic_start_precomputed = transcript.get_genomic_coordinates_from_precomputed_intervals(int(query["tx_start"]))
-            
+        try:
+            genomic_start_precomputed = (
+                transcript.get_genomic_coordinates_from_precomputed_intervals(
+                    int(query["tx_start"])
+                )
+            )
+
         except Exception as e:
             print(f"Error: {e}")
             continue
         try:
-            genomic_start_precomputed2 = transcript.get_genomic_coordinates_from_precomputed_intervals2(int(query["tx_start"]))
+            genomic_start_precomputed2 = (
+                transcript.get_genomic_coordinates_from_precomputed_intervals2(
+                    int(query["tx_start"])
+                )
+            )
         except Exception as e:
             print(f"Error: {e}")
             continue
@@ -56,8 +65,9 @@ def main():
         )
         output.write(
             f"{query['query_id']}\t{query['tx_start']}\t{transcript.chromosome}\t{genomic_start_precomputed2}\n"
-        )  
+        )
     output.close()
+
 
 if __name__ == "__main__":
     main()
