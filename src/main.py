@@ -7,16 +7,22 @@ import sys
 sys.path.append("./")
 from transcript import Transcript
 import pandas as pd
+import argparse 
 
 
 def main():
+    argparser = argparse.ArgumentParser(description="Find genomic coordinates of queries in transcripts")   
+    transcript_file = argparser.add_argument("--transcript_file", type=str, help="Path to the transcript file", default="data/transcripts.tsv")  
+    query_file = argparser.add_argument("--query_file", type=str, help="Path to the query file", default="data/queries.tsv")
+    output_file = argparser.add_argument("--output_file", type=str, help="Path to the output file", default="output/output.tsv")  
+    args = argparser.parse_args()
     # Read the data from the file
     transcripts = pd.read_csv(
-        "data/transcripts.tsv",
+        args.transcript_file,
         sep="\t",
         names=["transcript_id", "chromosome", "genomic_start", "cigar"],
     )
-    queries = pd.read_csv("data/queries.tsv", sep="\t", names=["query_id", "tx_start"])
+    queries = pd.read_csv(args.query_file, sep="\t", names=["query_id", "tx_start"])
 
     # Store each transcript in a dictionary for faster lookup
     all_transcripts = {}
@@ -32,7 +38,7 @@ def main():
         all_transcripts[transcript.transcript_id] = transcript
 
     # Find the genomic coordinates of the queries
-    output = open("output.tsv", "w")
+    output = open(args.output_file, "w")
     for _, query in queries.iterrows():
         if query["query_id"] not in all_transcripts:
             print(f"Transcript {query['query_id']} not found")
