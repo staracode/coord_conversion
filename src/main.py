@@ -29,21 +29,21 @@ def main():
         print(f"CIGAR : {transcript.cigar}")
         transcript.visualize_cigar()
         transcript.precompute_tx_intervals()
-
+        transcript.precomputeIntervals2()
         for _, query in queries.iterrows():
             if query["query_id"] != transcript.transcript_id:
                 continue
             genomic_start = transcript.get_genomic_coordinate(int(query["tx_start"]))
-            genomic_start_precomputed = (
-                transcript.get_genomic_coordinates_from_precomputed_intervals(
-                    int(query["tx_start"])
-                )
-            )
+            genomic_start_precomputed = transcript.get_genomic_coordinates_from_precomputed_intervals(int(query["tx_start"]))
+            genomic_start_precomputed2 = transcript.get_genomic_coordinates_from_precomputed_intervals2(int(query["tx_start"]))
             print(
                 f"{query['query_id']}\t{query['tx_start']}\t{transcript.chromosome}\t{genomic_start}"
             )
             print(
                 f"{query['query_id']}\t{query['tx_start']}\t{transcript.chromosome}\t{genomic_start_precomputed}"
+            )
+            print(
+                f"{query['query_id']}\t{query['tx_start']}\t{transcript.chromosome}\t{genomic_start_precomputed2}"
             )
 
 
