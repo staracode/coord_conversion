@@ -21,14 +21,21 @@ class TestTranscript(unittest.TestCase):
             )
         ]
         self.invalid_transcripts = [
-            {"transcript_id": "TR3", "chromosome": "CHR1", "genomic_start": "3", "cigar": "8M7D6M2I2M11D7M"},
-            {"transcript_id": "TR4", "chromosome": "CHR2", "genomic_start": -10, "cigar": "20M"}
+            {"transcript_id": "TR3", "chromosome": "CHR1", "genomic_start": "3", "cigar": "8Y7D6M2I2M11D7M"},
+            {"transcript_id": "TR4", "chromosome": "CHR2", "genomic_start": -10, "cigar": "M"}
         ]
 
     def test_valid_cigar(self):
         for transcript in self.valid_transcripts:
-            self.assertTrue(transcript.valid_cigar())
+            self.assertTrue(transcript.parse_cigar())
             transcript.visualize_cigar()
+
+    def test_invalid_cigar(self):
+        for invalid_transcript in self.invalid_transcripts:
+            with self.assertRaises(ValueError):
+                transcript = Transcript(**invalid_transcript)
+                self.assertFalse(transcript.parse_cigar())
+
 
     def test_coordinate(self):
         transcript_start = [4, 0]

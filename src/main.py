@@ -23,10 +23,6 @@ def main():
         transcript = Transcript(
             row["transcript_id"], row["chromosome"], row["genomic_start"], row["cigar"]
         )
-        if not transcript.valid_cigar():
-            print(
-                f"Invalid CIGAR string {transcript.cigar} for transcript {transcript.transcript_id}"
-            )
         print(f"Transcript : {transcript.transcript_id}")
         print(f"CIGAR : {transcript.cigar}")
         transcript.visualize_cigar()

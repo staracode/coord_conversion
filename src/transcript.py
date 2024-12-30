@@ -22,17 +22,16 @@ class Transcript:
         self.gx_intervals = []  # List of tuples (start, end)
         self.exonIntervals = None
 
-    def valid_cigar(self):
+    def valid_cigar(self, cigar_tuple):
         """
         Check if the CIGAR string is valid.
         """
+        length, operation = cigar_tuple
         cigar_operations = set(["M", "I", "D", "N", "S", "H", "P", "=", "X"])
-        for length, operation in self.parse_cigar():
-            if operation not in cigar_operations:
-                return False
-            if length <= 0:  # I think technically zero is allowed but I can't understand the logic behind it
-                return False
-        return True
+        if operation not in cigar_operations:
+            raise ValueError(f"Invalid operation {operation} in CIGAR string")
+        if length <= 0:  # I think technically zero is allowed but I can't understand the logic behind it
+            raise ValueError(f"Invalid length {length} in CIGAR string")
 
     def parse_cigar(self):
         """
@@ -40,6 +39,8 @@ class Transcript:
         """
         cigar_tuples = re.findall(r"([0-9]+)([MIDNSHP=X]{1})", self.cigar)
         cigar_tuples = [(int(length), operation) for length, operation in cigar_tuples]
+        for cigar_tuple in cigar_tuples:
+            self.valid_cigar(cigar_tuple)
         return cigar_tuples
 
     def visualize_cigar(self):
