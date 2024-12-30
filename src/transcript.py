@@ -22,7 +22,7 @@ class Transcript:
                 "genomic_start {} must be a non-negative integer".format(genomic_start)
             )
         self.genomic_start = genomic_start
-        self.cigar = cigar
+        self.cigar = cigar.lstrip().rstrip() # Remove trailing whitespace
         self.cigar_tuples = self.parse_cigar()  # List of tuples (length, operation)
         self.strand = (
             "+"  # Assume that the transcript is always mapped from genomic 5’ to 3’.
@@ -58,16 +58,17 @@ class Transcript:
         # check if the cigar string is valid or raise an error
         if cigar_tuples_check == []:
             raise ValueError("Invalid CIGAR string {}".format(self.cigar))
+        new_cigar = ""
         for one_cigar_tuple in cigar_tuples_check:
             self.valid_cigar(one_cigar_tuple)
-            new_cigar = one_cigar_tuple[0] + one_cigar_tuple[1]
+            new_cigar += str(one_cigar_tuple[0]) + str(one_cigar_tuple[1])
         # check if the new cigar string is the same as the original cigar string
         # if regex is not finding the cigar tuple pair, it drops the cigar tuple pair
         # this will cause the new_cigar to be different from the original cigar
         #print (new_cigar)
-        if new_cigar != self.cigar:
+        if len(new_cigar) != len(self.cigar):
             raise ValueError(
-                f"Invalid CIGAR string {self.cigar}: double check CIGAR {new_cigar}"
+                f"HereInvalid CIGAR string {self.cigar}: double check CIGAR {new_cigar}"
             )
         return cigar_tuples_check
 
