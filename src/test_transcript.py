@@ -1,8 +1,5 @@
 import unittest
 import sys
-
-sys.path.append("..")  # Adjust the path to point to the parent directory
-
 from transcript import Transcript
 
 

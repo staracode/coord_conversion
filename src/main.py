@@ -3,8 +3,6 @@ Goal: given a list of transcripts and a list of queries, find the genomic coordi
 """
 
 import sys
-
-sys.path.append("./")
 from transcript import Transcript
 import pandas as pd
 import argparse
