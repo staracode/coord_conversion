@@ -7,26 +7,30 @@ import re
 from intervaltree import Interval, IntervalTree
 
 class Transcript:
-    def __init__(self, transcript_id, chromosome, genomic_start, cigar):
+    def __init__(self, transcript_id: str, chromosome: str, genomic_start: int, cigar: str):
         self.transcript_id = transcript_id
         self.chromosome = chromosome
-        self.genomic_start = int(genomic_start)
+        if not isinstance(genomic_start, int):
+            raise ValueError("genomic_start must be an integer")
+        if genomic_start < 0:
+            raise ValueError("genomic_start must be a non-negative integer")
+        self.genomic_start = genomic_start
         self.cigar = cigar
-        self.cigar_tuples = self.parse_cigar()  # CIGAR string
-        self.strand = "+"  # Assume all transcripts are on the positive strand
-        self.tx_intervals = []
-        self.gx_intervals = []
+        self.cigar_tuples = self.parse_cigar() # List of tuples (length, operation)
+        self.strand = "+"  # Assume that the transcript is always mapped from genomic 5’ to 3’.
+        self.tx_intervals = []  # List of tuples (start, end)      
+        self.gx_intervals = []  # List of tuples (start, end)
         self.exonIntervals = None
 
     def valid_cigar(self):
         """
         Check if the CIGAR string is valid.
         """
-        cigar_operations = set(["M", "I", "D", "N", "S", "=", "X"])
+        cigar_operations = set(["M", "I", "D", "N", "S", "H", "P", "=", "X"])
         for length, operation in self.parse_cigar():
             if operation not in cigar_operations:
                 return False
-            if length <= 0:
+            if length <= 0:  # I think technically zero is allowed but I can't understand the logic behind it
                 return False
         return True
 
@@ -34,7 +38,7 @@ class Transcript:
         """
         Parse the CIGAR string and return a list of tuples (length, operation).
         """
-        cigar_tuples = re.findall(r"([0-9]+)([MIDNX=]{1})", self.cigar)
+        cigar_tuples = re.findall(r"([0-9]+)([MIDNSHP=X]{1})", self.cigar)
         cigar_tuples = [(int(length), operation) for length, operation in cigar_tuples]
         return cigar_tuples
 
@@ -54,7 +58,7 @@ class Transcript:
             elif operation in ["D", "N"]:
                 genomic_string += "D" * int(length)
                 query_string += "-" * int(length)
-            elif operation in ["I", "S"]:
+            elif operation in ["I"]:  # I don't want to deal with S, H, P
                 genomic_string += "-" * int(length)
                 query_string += "I" * int(length)
             else:
@@ -122,8 +126,7 @@ class Transcript:
                 exonIntervals.addi(tx_pos, tx_pos + length, gx_pos)
                 tx_pos += length
                 gx_pos += length
-            elif operation in ["D", "N"]:  # what is N?
-                #exonIntervals.addi(tx_pos, tx_pos, gx_pos + length)
+            elif operation in ["D", "N"]:  
                 gx_pos += length
             elif operation in ["I", "S"]:
                 tx_pos += length
@@ -131,9 +134,13 @@ class Transcript:
                 pass
         self.exonIntervals = exonIntervals
     
-    def get_genomic_coordinates_from_precomputed_intervals2(self, tx_start):
+    def get_genomic_coordinates_from_precomputed_intervals2(self, tx_start: int):
         """
         Given a transcript coordinate (tx_start), return the corresponding genomic coordinate using precomputed intervals.
         """
+        if not isinstance(tx_start, int):
+            raise ValueError("tx_start must be an integer")
+        if tx_start < 0:
+            raise ValueError("tx_start must be a non-negative integer")
         for interval in self.exonIntervals[tx_start]:
             return interval.data + (tx_start - interval.begin)
