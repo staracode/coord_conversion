@@ -104,6 +104,8 @@ def main():
             )
             transcript.precomputeIntervals2()
             all_transcripts[transcript.transcript_id] = transcript
+            if args.debug:
+                transcript.visualize_cigar()
         except Exception as e:
             logger.error(f"Error creating transcript {row['transcript_id']}: {e}")
             sys.exit(1)
