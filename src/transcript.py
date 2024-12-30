@@ -38,26 +38,6 @@ class Transcript:
         cigar_tuples = [(int(length), operation) for length, operation in cigar_tuples]
         return cigar_tuples
 
-    def get_genomic_coordinate(self, tx_start):
-        """
-        Given a transcript coordinate (tx_start), return the corresponding genomic coordinate.
-        """
-        genomic_pos = self.genomic_start
-        for length, operation in self.cigar_tuples:
-            if tx_start <= 0:
-                return genomic_pos + tx_start
-            if operation in ["M", "=", "X"]:
-                genomic_pos += length
-                tx_start -= length
-            elif operation in ["D", "N"]:
-                genomic_pos += length
-            elif operation in ["I", "S"]:  # what is S?
-                tx_start -= length
-            else:  # Skipped regions
-                pass
-        # TODO: if tx_start exceeds the length of the transcript, return the genomic position?
-        return genomic_pos + tx_start
-
     def visualize_cigar(self):
         """
         Visualize the CIGAR string.
